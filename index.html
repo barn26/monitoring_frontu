@@ -468,6 +468,7 @@
             color: var(--text-secondary);
             font-weight: 700;
             line-height: 1.4;
+            text-align: right;
         }
     </style>
 </head>
@@ -492,7 +493,8 @@
                     <div class="brand-subtitle">
                         <span>Київський час: <span id="kyivClock" class="clock-pill">--:--:--</span></span>
                         <span>•</span>
-                        <span>Актуально на: <span id="dataTimestamp" class="data-time-pill">--.--.---- --:--</span></span>
+                        <!-- Фіксований час актуальності зведення (можна змінювати за потреби) -->
+                        <span>Дані актуальні на: <strong class="data-time-pill">18.11.2026 о 06:00</strong></span>
                     </div>
                 </div>
             </div>
@@ -501,7 +503,7 @@
                 <button id="installPwaBtn" onclick="installPwaApp()" class="btn btn-install" title="Встановити як додаток">
                     <span>📲 Встановити додаток</span>
                 </button>
-                <button id="refreshBtn" onclick="manualRefresh()" class="btn btn-primary" title="Оновити зведення">
+                <button id="refreshBtn" onclick="manualRefresh()" class="btn btn-primary" title="Перевірити оновлення">
                     <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="23 4 23 10 17 10"></polyline>
                         <polyline points="1 20 1 14 7 14"></polyline>
@@ -670,7 +672,7 @@
                         <span>📡</span>
                         <span>Оперативна стрічка новин фронту</span>
                     </div>
-                    <span id="lastUpdateText" style="font-size:11px;color:var(--text-secondary);">Оновлено щойно</span>
+                    <span style="font-size:11px;color:var(--text-secondary);">Зведення Генштабу</span>
                 </div>
 
                 <div class="feed-controls">
@@ -694,7 +696,7 @@
     <!-- ПІДВАЛ З АВТОРСЬКИМИ ПРАВАМИ -->
     <footer class="app-footer">
         <div>
-            <span>Автономний PWA-дашборд оперативного моніторингу • Працює офлайн</span>
+            <span>Автономний PWA-дашборд • Працює офлайн</span>
         </div>
         <div class="footer-credits">
             © 2026 Всі права захищені<br>
@@ -705,32 +707,26 @@
     <script>
         'use strict';
 
-        // Реєстрація Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('service-worker.js').catch(() => {});
             });
         }
 
-        // Логіка кнопки встановлення PWA
         let deferredPrompt;
         const installBtn = document.getElementById('installPwaBtn');
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            if (installBtn) {
-                installBtn.style.display = 'inline-flex';
-            }
+            if (installBtn) installBtn.style.display = 'inline-flex';
         });
 
         async function installPwaApp() {
             if (!deferredPrompt) return;
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted' && installBtn) {
-                installBtn.style.display = 'none';
-            }
+            if (outcome === 'accepted' && installBtn) installBtn.style.display = 'none';
             deferredPrompt = null;
         }
 
@@ -845,7 +841,6 @@
 
             updateKyivClock();
             setInterval(updateKyivClock, 1000);
-            updateDataTimestamp();
 
             renderAnalyticsPanel();
             renderSectorTabs();
@@ -864,21 +859,6 @@
                 });
             } catch (e) {
                 clockEl.textContent = new Date().toTimeString().slice(0, 8);
-            }
-        }
-
-        function updateDataTimestamp() {
-            const stampEl = document.getElementById('dataTimestamp');
-            if (!stampEl) return;
-            try {
-                const now = new Date();
-                stampEl.textContent = now.toLocaleString('uk-UA', {
-                    timeZone: 'Europe/Kyiv',
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                });
-            } catch (e) {
-                stampEl.textContent = 'Сьогодні';
             }
         }
 
@@ -1259,8 +1239,6 @@
             if (icon) icon.classList.add('spin');
             setTimeout(() => {
                 if (icon) icon.classList.remove('spin');
-                updateDataTimestamp();
-                document.getElementById('lastUpdateText').textContent = `Оновлено о ${new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'})}`;
             }, 600);
         }
 
