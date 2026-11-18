@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Моніторинг фронту — Тактична мапа та зведення</title>
+    
+    <!-- Підключення PWA маніфесту та іконок -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+    <meta name="theme-color" content="#070b12">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Фронт УА">
+
+    <style>
+        :root {
+            --bg-main: #070b12;
+            --bg-card: #0d1422;
+            --bg-card-hover: #131d30;
+            --bg-elevated: #18243b;
+            --border-color: #202e48;
+            --border-active: #3b82f6;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-red: #ef4444;
+            --accent-red-dim: rgba(239, 68, 68, 0.18);
+            --accent-amber: #f59e0b;
+            --accent-amber-dim: rgba(245, 158, 11, 0.18);
+            --accent-blue: #3b82f6;
+            --accent-blue-dim: rgba(59, 130, 246, 0.18);
+            --accent-emerald: #10b981;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.5;
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        button, input, select { font-family: inherit; color: inherit; }
+        button { cursor: pointer; border: none; background: none; transition: all 0.18s ease; }
+        button:active { transform: scale(0.98); }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-main); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: #364763; }
+
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(7, 11, 18, 0.95);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 16px;
+        }
+
+        .header-inner {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .brand-group { display: flex; align-items: center; gap: 12px; }
+
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(59, 130, 246, 0.22));
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-red);
+            flex-shrink: 0;
+        }
+
+        .brand-title-wrap h1 {
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 8px;
+            border-radius: 99px;
+            background: var(--accent-red-dim);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+        }
+
+        .live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            animation: pulseDot 1.6s infinite ease-in-out;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            50% { opacity: 0.6; transform: scale(1.25); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 1px;
+        }
+
+        .clock-pill { font-family: var(--font-mono); color: #cbd5e1; font-weight: 600; }
+
+        .header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 7px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            min-height: 36px;
+        }
+
+        .btn:hover { background: var(--bg-elevated); border-color: #384a68; }
+        .btn-primary { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-install { background: var(--accent-emerald); border-color: var(--accent-emerald); color: #052e16; font-weight: 700; display: none; }
+        .btn-install:hover { background: #059669; color: #fff; }
+
+        .spin { animation: spin360 0.8s linear infinite; }
+        @keyframes spin360 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .main-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .panel-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: rgba(24, 36, 59, 0.5);
+        }
+
+        .panel-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .analytics-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+        .analytics-body.collapsed { display: none; }
+
+        .losses-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        @media (min-width: 640px) { .losses-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 1024px) { .losses-grid { grid-template-columns: repeat(6, 1fr); } }
+
+        .loss-item {
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .loss-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+        .loss-value-row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-top: 2px; }
+        .loss-total { font-family: var(--font-mono); font-size: 16px; font-weight: 800; color: var(--text-primary); }
+        .loss-delta {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 6px;
+            background: var(--accent-red-dim);
+            color: #fca5a5;
+        }
+
+        .intensity-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .intensity-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        @media (min-width: 768px) { .intensity-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 1200px) { .intensity-grid { grid-template-columns: repeat(4, 1fr); } }
+
+        .intensity-bar-card {
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 9px 12px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .intensity-bar-card:hover { border-color: #3b82f6; background: var(--bg-card-hover); }
+        .intensity-bar-card.active { border-color: var(--accent-red); background: rgba(239, 68, 68, 0.08); }
+        .intensity-top { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; }
+        .intensity-count { font-family: var(--font-mono); font-size: 11px; color: var(--accent-amber); }
+        .progress-track { width: 100%; height: 6px; background: var(--bg-elevated); border-radius: 99px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+
+        .view-controls-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+        .mode-switcher {
+            display: inline-flex;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .mode-btn { padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+        .mode-btn.active { background: var(--accent-blue); color: #fff; }
+        .status-strip { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-secondary); }
+
+        .workspace-grid { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+        @media (min-width: 1024px) {
+            .workspace-grid.mode-split { grid-template-columns: 1.05fr 0.95fr; }
+            .workspace-grid.mode-map .feed-column, .workspace-grid.mode-feed .map-column { display: none; }
+            .map-column.sticky-map { position: sticky; top: 74px; }
+        }
+        @media (max-width: 1023px) {
+            .workspace-grid.mode-map .feed-column, .workspace-grid.mode-feed .map-column { display: none; }
+        }
+
+        .map-viewport {
+            position: relative;
+            width: 100%;
+            height: 480px;
+            background: radial-gradient(circle at 50% 45%, #0f1728 0%, #060911 100%);
+            overflow: hidden;
+            user-select: none;
+            touch-action: none;
+        }
+        @media (min-width: 1024px) { .map-viewport { height: 600px; } }
+
+        .ukraine-svg { width: 100%; height: 100%; display: block; cursor: grab; }
+        .ukraine-svg:active { cursor: grabbing; }
+
+        .marker-pulse-ring { transform-box: fill-box; transform-origin: center; animation: svgPulse 2.2s infinite ease-out; }
+        @keyframes svgPulse { 0% { transform: scale(0.85); opacity: 0.85; } 100% { transform: scale(2.4); opacity: 0; } }
+
+        .map-marker-group { cursor: pointer; transition: opacity 0.2s ease; }
+        .map-marker-group:hover .marker-label-bg { fill: #1e293b; stroke: #60a5fa; }
+
+        .map-controls-overlay { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+        .map-ctrl-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-sm);
+            background: rgba(15, 23, 38, 0.92);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+        }
+        .map-ctrl-btn:hover { background: var(--bg-elevated); border-color: var(--accent-blue); }
+
+        .map-legend {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background: rgba(7, 11, 18, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 8px 12px;
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            backdrop-filter: blur(6px);
+            pointer-events: none;
+        }
+        .legend-row { display: flex; align-items: center; gap: 7px; color: var(--text-secondary); }
+        .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+        .map-tooltip {
+            position: absolute;
+            z-index: 20;
+            pointer-events: none;
+            background: rgba(13, 20, 36, 0.96);
+            border: 1px solid var(--accent-blue);
+            border-radius: var(--radius-sm);
+            padding: 8px 10px;
+            font-size: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            display: none;
+            max-width: 230px;
+        }
+
+        .feed-controls { padding: 14px 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px; }
+        .search-box-wrap { position: relative; display: flex; align-items: center; }
+        .search-input {
+            width: 100%;
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 10px 36px;
+            font-size: 13px;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus { border-color: var(--accent-blue); }
+        .search-icon { position: absolute; left: 12px; color: var(--text-muted); pointer-events: none; }
+        .clear-search-btn { position: absolute; right: 10px; color: var(--text-muted); font-size: 14px; padding: 4px; display: none; }
+
+        .sector-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+        .sector-tab {
+            padding: 5px 10px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+        .sector-tab:hover { border-color: #475569; color: var(--text-primary); }
+        .sector-tab.active { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; }
+        .sector-tab.saved-tab.active { background: var(--accent-amber); border-color: var(--accent-amber); color: #070b12; }
+
+        .news-list { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; max-height: 760px; overflow-y: auto; }
+        .news-card {
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        .news-card:hover { border-color: #3b4f70; background: #0d1420; }
+        .news-card.highlighted { border-color: var(--accent-amber); box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25); }
+        .news-card.priority-high { border-left: 3px solid var(--accent-red); }
+        .news-card.priority-medium { border-left: 3px solid var(--accent-amber); }
+        .news-card.priority-info { border-left: 3px solid var(--accent-blue); }
+
+        .news-meta-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; font-size: 11px; }
+        .badges-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+        .badge-sector { padding: 2px 8px; border-radius: 6px; font-weight: 700; background: var(--accent-blue-dim); color: #93c5fd; }
+        .badge-city {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            background: var(--accent-red-dim);
+            color: #fca5a5;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge-city:hover { background: rgba(239, 68, 68, 0.3); }
+        .news-time { font-family: var(--font-mono); color: var(--text-muted); }
+        .news-title { font-size: 14px; font-weight: 700; color: var(--text-primary); line-height: 1.4; }
+        .news-summary { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+        .news-footer {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(32, 46, 72, 0.6);
+            font-size: 11px;
+        }
+        .news-source { color: var(--text-muted); font-weight: 600; }
+        .news-actions { display: flex; align-items: center; gap: 6px; }
+        .card-action-btn {
+            padding: 4px 9px;
+            border-radius: 6px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .card-action-btn:hover { color: var(--text-primary); border-color: var(--accent-blue); }
+        .card-action-btn.bookmarked { background: var(--accent-amber-dim); border-color: rgba(245, 158, 11, 0.5); color: #fcd34d; }
+
+        .empty-state { text-align: center; padding: 36px 16px; color: var(--text-secondary); font-size: 13px; }
+        .app-footer {
+            max-width: 1440px;
+            margin: 8px auto 24px;
+            padding: 0 16px;
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="brand-group">
+                <div class="brand-logo" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                        <line x1="12" y1="2" x2="12" y2="6"></line>
+                    </svg>
+                </div>
+                <div class="brand-title-wrap">
+                    <h1>
+                        МОНІТОРИНГ ФРОНТУ
+                        <span class="live-badge"><span class="live-dot"></span> PWA READY</span>
+                    </h1>
+                    <div class="brand-subtitle">
+                        <span>Київський час: <span id="kyivClock" class="clock-pill">--:--:--</span></span>
+                        <span>•</span>
+                        <span id="feedSyncStatus">Автономний режим PWA</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <button id="installPwaBtn" onclick="installPwaApp()" class="btn btn-install" title="Встановити як додаток">
+                    <span>📲 Встановити додаток</span>
+                </button>
+                <button id="refreshBtn" onclick="manualRefresh()" class="btn btn-primary" title="Оновити зведення">
+                    <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    <span>Оновити</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <section class="panel-card" aria-label="Статистика та інтенсивність боїв">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span>📊</span>
+                    <span>Зведення Генштабу: втрати противника за добу та інтенсивність боїв</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:11px;color:var(--text-secondary);">Всього боєзіткнень: <strong style="color:#fca5a5;">186</strong></span>
+                    <button id="toggleAnalyticsBtn" onclick="toggleAnalyticsPanel()" class="btn" style="padding:4px 10px;min-height:28px;font-size:11px;">
+                        Згорнути
+                    </button>
+                </div>
+            </div>
+
+            <div id="analyticsBody" class="analytics-body">
+                <div id="lossesGrid" class="losses-grid"></div>
+                <div>
+                    <div class="intensity-section-title">
+                        <span>🔥 Інтенсивність бойових дій по напрямках (натисніть для фільтрації):</span>
+                        <button onclick="selectSector('Усі')" style="font-size:11px;color:#60a5fa;font-weight:600;">Скинути фільтр</button>
+                    </div>
+                    <div id="intensityGrid" class="intensity-grid"></div>
+                </div>
+            </div>
+        </section>
+
+        <div class="view-controls-bar">
+            <div class="mode-switcher" role="tablist" aria-label="Режим відображення">
+                <button id="modeSplitBtn" onclick="setLayoutMode('split')" class="mode-btn active">Мапа + Стрічка</button>
+                <button id="modeMapBtn" onclick="setLayoutMode('map')" class="mode-btn">Лише Мапа</button>
+                <button id="modeFeedBtn" onclick="setLayoutMode('feed')" class="mode-btn">Лише Стрічка</button>
+            </div>
+
+            <div class="status-strip">
+                <span>Активний сектор: <strong id="activeSectorLabel" style="color:var(--text-primary);">Усі напрямки</strong></span>
+                <span>•</span>
+                <span>Показано новин: <strong id="visibleNewsCount" style="color:#60a5fa;">0</strong></span>
+            </div>
+        </div>
+
+        <div id="workspaceGrid" class="workspace-grid mode-split">
+            <section class="panel-card map-column sticky-map" aria-label="Інтерактивна деталізована тактична мапа України">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>🗺️</span>
+                        <span>Деталізована тактична мапа лінії зіткнення та міст</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span id="mapFocusLabel" style="font-size:11px;padding:3px 8px;border-radius:6px;background:var(--bg-main);border:1px solid var(--border-color);color:#93c5fd;">
+                            Уся Україна
+                        </span>
+                        <button onclick="resetMapTransform()" class="btn" style="padding:4px 9px;min-height:28px;font-size:11px;" title="Скинути масштаб карти">
+                            Центр
+                        </button>
+                    </div>
+                </div>
+
+                <div id="mapViewport" class="map-viewport">
+                    <div id="mapTooltip" class="map-tooltip"></div>
+
+                    <div class="map-controls-overlay">
+                        <button onclick="zoomMap(1.25)" class="map-ctrl-btn" title="Наблизити">+</button>
+                        <button onclick="zoomMap(0.8)" class="map-ctrl-btn" title="Віддалити">−</button>
+                        <button onclick="focusEasternFront()" class="map-ctrl-btn" style="font-size:11px;font-weight:800;" title="Фронт">Фронт</button>
+                    </div>
+
+                    <div class="map-legend">
+                        <div style="font-weight:700;color:var(--text-primary);margin-bottom:2px;">Умовні позначення:</div>
+                        <div class="legend-row">
+                            <span class="legend-dot" style="background:#ef4444;box-shadow:0 0 6px #ef4444;"></span>
+                            <span>Висока інтенсивність / Штурми</span>
+                        </div>
+                        <div class="legend-row">
+                            <span class="legend-dot" style="background:#f59e0b;"></span>
+                            <span>Активні бої / Артобстріли</span>
+                        </div>
+                        <div class="legend-row">
+                            <span class="legend-dot" style="background:#3b82f6;"></span>
+                            <span>Оперативний контроль / ППО</span>
+                        </div>
+                        <div class="legend-row">
+                            <span style="width:14px;height:3px;background:#ef4444;display:inline-block;border-radius:2px;"></span>
+                            <span>Лінія фронту</span>
+                        </div>
+                    </div>
+
+                    <svg id="ukraineSvgMap" class="ukraine-svg" viewBox="0 0 900 620" preserveAspectRatio="xMidYMid meet">
+                        <defs>
+                            <pattern id="tacticalGrid" width="45" height="45" patternUnits="userSpaceOnUse">
+                                <path d="M 45 0 L 0 0 0 45" fill="none" stroke="rgba(59, 130, 246, 0.08)" stroke-width="1"/>
+                            </pattern>
+                            <linearGradient id="frontZoneGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="rgba(239, 68, 68, 0.28)" />
+                                <stop offset="100%" stop-color="rgba(245, 158, 11, 0.14)" />
+                            </linearGradient>
+                            <filter id="frontGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="3" result="blur" />
+                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            </filter>
+                        </defs>
+
+                        <rect x="-500" y="-500" width="2000" height="1800" fill="url(#tacticalGrid)" />
+
+                        <g id="mapTransformGroup">
+                            <path d="M 320 480 Q 430 470 520 510 L 660 510 L 690 450 L 760 440 L 740 570 L 300 580 Z"
+                                  fill="rgba(14, 116, 144, 0.12)" stroke="rgba(56, 189, 248, 0.15)" stroke-width="1" />
+                            <text x="415" y="545" fill="rgba(125, 211, 252, 0.35)" font-size="12" font-weight="700" letter-spacing="3">ЧОРНЕ МОРЕ</text>
+                            <text x="645" y="476" fill="rgba(125, 211, 252, 0.35)" font-size="10" font-weight="700" letter-spacing="2">АЗОВСЬКЕ МОРЕ</text>
+
+                            <path d="M 105 170 L 145 125 L 215 118 L 285 122 L 355 115 L 415 102 L 475 88 L 535 95 L 580 128 L 635 162 L 705 188 L 775 215 L 818 258 L 810 308 L 775 348 L 728 382 L 668 415 L 598 432 L 535 446 L 475 452 L 415 462 L 365 495 L 330 482 L 358 435 L 315 395 L 258 385 L 210 352 L 155 348 L 102 318 L 78 272 L 85 218 Z"
+                                  fill="#111a2c" stroke="#38bdf8" stroke-width="2" stroke-opacity="0.55" stroke-linejoin="round" />
+
+                            <path d="M 525 455 L 555 465 L 615 485 L 632 505 L 590 528 L 535 532 L 502 510 L 512 478 Z"
+                                  fill="#141d30" stroke="#38bdf8" stroke-width="1.6" stroke-opacity="0.5" stroke-linejoin="round" />
+                            <text x="545" y="505" fill="rgba(148, 163, 184, 0.55)" font-size="10" font-weight="700">АР КРИМ</text>
+
+                            <path d="M 255 122 L 265 250 L 235 375 M 415 102 L 420 265 L 435 455 M 580 128 L 575 280 L 560 440 M 145 235 L 420 245 L 775 245"
+                                  fill="none" stroke="rgba(148, 163, 184, 0.14)" stroke-width="1" stroke-dasharray="4,4" />
+                            <path d="M 412 104 Q 425 180 432 230 Q 475 275 545 315 Q 575 355 545 395 Q 505 425 465 452"
+                                  fill="none" stroke="rgba(56, 189, 248, 0.35)" stroke-width="2.5" stroke-linecap="round" />
+
+                            <g fill="rgba(148, 163, 184, 0.65)" font-size="9.5" font-weight="600">
+                                <circle cx="138" cy="222" r="2.5" fill="#64748b" /><text x="145" y="225">Львів</text>
+                                <circle cx="210" cy="180" r="2.5" fill="#64748b" /><text x="217" y="183">Луцьк</text>
+                                <circle cx="205" cy="225" r="2.5" fill="#64748b" /><text x="212" y="228">Рівне</text>
+                                <circle cx="268" cy="245" r="2.5" fill="#64748b" /><text x="275" y="248">Вінниця</text>
+                                <circle cx="340" cy="275" r="2.5" fill="#64748b" /><text x="347" y="278">Умань</text>
+                                <circle cx="418" cy="195" r="3.5" fill="#3b82f6" /><text x="426" y="198" fill="#cbd5e1" font-weight="700">КИЇВ</text>
+                                <circle cx="385" cy="435" r="3" fill="#64748b" /><text x="342" y="446">Одеса</text>
+                                <circle cx="485" cy="380" r="2.5" fill="#64748b" /><text x="492" y="383">Миколаїв</text>
+                                <circle cx="565" cy="312" r="3" fill="#64748b" /><text x="518" y="310">Дніпро</text>
+                                <circle cx="595" cy="355" r="2.5" fill="#64748b" /><text x="602" y="358">Запоріжжя</text>
+                                <circle cx="515" cy="135" r="2.5" fill="#64748b" /><text x="478" y="132">Суми</text>
+                                <circle cx="480" cy="195" r="2.5" fill="#64748b" /><text x="438" y="192">Чернігів</text>
+                                <circle cx="605" cy="188" r="3" fill="#94a3b8" /><text x="562" y="184">Харків</text>
+                                <circle cx="675" cy="275" r="2.5" fill="#64748b" /><text x="682" y="278">Полтава</text>
+                            </g>
+
+                            <path d="M 552 108 L 622 152 L 692 182 L 732 232 L 735 288 L 718 332 L 642 372 L 555 415 L 520 438 L 548 442 L 655 395 L 745 352 L 785 295 L 782 225 L 715 175 L 635 142 L 568 98 Z"
+                                  fill="url(#frontZoneGrad)" />
+                            <path id="activeFrontlinePath"
+                                  d="M 558 104 L 625 150 L 695 184 L 728 232 L 730 278 L 714 322 L 645 366 L 565 408 L 525 435"
+                                  fill="none" stroke="#ef4444" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#frontGlow)" />
+
+                            <g id="mapMarkersContainer"></g>
+                        </g>
+                    </svg>
+                </div>
+            </section>
+
+            <section class="panel-card feed-column" aria-label="Стрічка новин">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>📡</span>
+                        <span>Оперативна стрічка новин фронту</span>
+                    </div>
+                    <span id="lastUpdateText" style="font-size:11px;color:var(--text-secondary);">Оновлено щойно</span>
+                </div>
+
+                <div class="feed-controls">
+                    <div class="search-box-wrap">
+                        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input id="searchInput" type="text" class="search-input" placeholder="Пошук за містом або ключовим словом..." oninput="handleSearchInput()" />
+                        <button id="clearSearchBtn" onclick="clearSearch()" class="clear-search-btn">✕</button>
+                    </div>
+
+                    <div id="sectorTabsContainer" class="sector-tabs" role="tablist"></div>
+                </div>
+
+                <div id="newsListContainer" class="news-list"></div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <span>Автономний PWA-дашборд оперативного моніторингу • Працює офлайн</span>
+        <span>Дані збережено локально у браузері</span>
+    </footer>
+
+    <script>
+        'use strict';
+
+        // Реєстрація Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js').catch(() => {});
+            });
+        }
+
+        // Логіка кнопки встановлення PWA
+        let deferredPrompt;
+        const installBtn = document.getElementById('installPwaBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installBtn) {
+                installBtn.style.display = 'inline-flex';
+            }
+        });
+
+        async function installPwaApp() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted' && installBtn) {
+                installBtn.style.display = 'none';
+            }
+            deferredPrompt = null;
+        }
+
+        window.addEventListener('appinstalled', () => {
+            if (installBtn) installBtn.style.display = 'none';
+            deferredPrompt = null;
+        });
+
+        const ENEMY_LOSSES_DATA = [
+            { label: 'Особовий склад', total: '718 940', delta: '+1 420' },
+            { label: 'Танки', total: '9 338', delta: '+12' },
+            { label: 'Бойові бронемашини', total: '18 994', delta: '+34' },
+            { label: 'Артсистеми', total: '20 520', delta: '+46' },
+            { label: 'БПЛА операт.-такт.', total: '18 914', delta: '+78' },
+            { label: 'Автотехніка та цистерни', total: '29 236', delta: '+92' }
+        ];
+
+        const SECTOR_INTENSITY_DATA = [
+            { sector: 'Покровський', battles: 48, max: 55, color: '#ef4444' },
+            { sector: 'Курахівський', battles: 36, max: 55, color: '#ef4444' },
+            { sector: "Куп'янський", battles: 24, max: 55, color: '#f59e0b' },
+            { sector: 'Курський', battles: 21, max: 55, color: '#f59e0b' },
+            { sector: 'Торецький', battles: 18, max: 55, color: '#f59e0b' },
+            { sector: 'Краматорський', battles: 15, max: 55, color: '#3b82f6' },
+            { sector: 'Запорізький', battles: 11, max: 55, color: '#3b82f6' },
+            { sector: 'Південний', battles: 8, max: 55, color: '#3b82f6' }
+        ];
+
+        const MAP_LOCATIONS = [
+            { id: 'sudzha', name: 'Суджа', sector: 'Курський', x: 562, y: 108, intensity: 'high', aliases: ['суджа', 'суджі', 'курськ', 'коренево'] },
+            { id: 'vovchansk', name: 'Вовчанськ', sector: 'Харківський', x: 626, y: 154, intensity: 'medium', aliases: ['вовчанськ', 'липці', 'стариця'] },
+            { id: 'kupyansk', name: "Куп'янськ", sector: "Куп'янський", x: 688, y: 188, intensity: 'high', aliases: ["куп'янськ", 'купянск', 'оскіл', 'кругляківк'] },
+            { id: 'lyman', name: 'Лиман', sector: "Куп'янський", x: 712, y: 215, intensity: 'medium', aliases: ['лиман', 'кремінн', 'святігірськ'] },
+            { id: 'siversk', name: 'Сіверськ', sector: 'Краматорський', x: 732, y: 228, intensity: 'medium', aliases: ['сіверськ', 'білогорівк'] },
+            { id: 'chasiv_yar', name: 'Часів Яр', sector: 'Краматорський', x: 724, y: 242, intensity: 'high', aliases: ['часів яр', 'краматорськ', 'бахмут'] },
+            { id: 'toretsk', name: 'Торецьк', sector: 'Торецький', x: 726, y: 266, intensity: 'high', aliases: ['торецьк', 'нью-йорк', 'залізне'] },
+            { id: 'myrnohrad', name: 'Мирноград', sector: 'Покровський', x: 706, y: 282, intensity: 'high', aliases: ['мирноград', 'гродівк'] },
+            { id: 'pokrovsk', name: 'Покровськ', sector: 'Покровський', x: 692, y: 294, intensity: 'high', aliases: ['покровськ', 'лисівк'] },
+            { id: 'selydove', name: 'Селидове', sector: 'Покровський', x: 696, y: 310, intensity: 'high', aliases: ['селидове', 'гірник'] },
+            { id: 'kurakhove', name: 'Курахове', sector: 'Курахівський', x: 702, y: 328, intensity: 'high', aliases: ['курахове', 'вугледар', 'дальнє'] },
+            { id: 'orikhiv', name: 'Оріхів', sector: 'Запорізький', x: 635, y: 368, intensity: 'info', aliases: ['оріхів', 'роботине', 'гуляйполе'] },
+            { id: 'krynky', name: 'Херсон / Кринки', sector: 'Південний', x: 542, y: 422, intensity: 'info', aliases: ['херсон', 'кринки', 'дніпро'] }
+        ];
+
+        const INITIAL_FRONT_NEWS = [
+            {
+                id: 'fn-101',
+                title: 'Покровський напрямок: Сили оборони відбили 48 штурмових атак у районах Лисівки та південніше Покровська',
+                summary: 'Противник намагається прорвати оборону малими піхотними групами за підтримки бронетехніки. Артилерія та оператори БПЛА знищили 4 бронемашини та 2 танки.',
+                sector: 'Покровський',
+                locationId: 'pokrovsk',
+                priority: 'high',
+                source: 'Генштаб ЗСУ • Оперативне зведення',
+                minutesAgo: 6,
+                link: '#'
+            },
+            {
+                id: 'fn-102',
+                title: 'Курахівський сектор: напружені бої поблизу Курахового та Дальнього, українські підрозділи тримають рубежі',
+                summary: 'Зафіксовано спроби ворога тиснути з флангів. Підрозділи провели контратакувальні дії для вирівнювання лінії фронту.',
+                sector: 'Курахівський',
+                locationId: 'kurakhove',
+                priority: 'high',
+                source: 'ОСУВ «Хортиця»',
+                minutesAgo: 14,
+                link: '#'
+            },
+            {
+                id: 'fn-103',
+                title: "Куп'янський напрямок: ліквідовано передову групу противника біля річки Оскіл",
+                summary: 'Спроба прориву механізованої колони зазнала поразки. Сили оборони контролюють підступи до міста.',
+                sector: "Куп'янський",
+                locationId: 'kupyansk',
+                priority: 'high',
+                source: 'Мілітарний • Аналітика',
+                minutesAgo: 23,
+                link: '#'
+            }
+        ];
+
+        const state = {
+            news: [],
+            activeSector: 'Усі',
+            searchQuery: '',
+            selectedLocationId: null,
+            highlightedNewsId: null,
+            bookmarkedIds: loadBookmarks(),
+            analyticsCollapsed: false,
+            layoutMode: 'split',
+            mapTransform: { scale: 1, x: 0, y: 0 },
+            isDraggingMap: false,
+            dragStart: { x: 0, y: 0 }
+        };
+
+        function loadBookmarks() {
+            try {
+                const raw = localStorage.getItem('frontline_bookmarks_v2');
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) { return []; }
+        }
+
+        function saveBookmarks() {
+            try { localStorage.setItem('frontline_bookmarks_v2', JSON.stringify(state.bookmarkedIds)); } catch (e) {}
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = Date.now();
+            state.news = INITIAL_FRONT_NEWS.map(item => ({
+                ...item,
+                timestamp: new Date(now - item.minutesAgo * 60000).toISOString()
+            }));
+
+            updateKyivClock();
+            setInterval(updateKyivClock, 1000);
+
+            renderAnalyticsPanel();
+            renderSectorTabs();
+            renderMapMarkers();
+            renderNewsFeed();
+            initSvgMapInteractions();
+        });
+
+        function updateKyivClock() {
+            const clockEl = document.getElementById('kyivClock');
+            if (!clockEl) return;
+            try {
+                clockEl.textContent = new Date().toLocaleTimeString('uk-UA', {
+                    timeZone: 'Europe/Kyiv',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+            } catch (e) {
+                clockEl.textContent = new Date().toTimeString().slice(0, 8);
+            }
+        }
+
+        function renderAnalyticsPanel() {
+            const lossesGrid = document.getElementById('lossesGrid');
+            if (lossesGrid) {
+                lossesGrid.innerHTML = ENEMY_LOSSES_DATA.map(item => `
+                    <div class="loss-item">
+                        <span class="loss-label">${item.label}</span>
+                        <div class="loss-value-row">
+                            <span class="loss-total">${item.total}</span>
+                            <span class="loss-delta">${item.delta}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            renderIntensityBars();
+        }
+
+        function renderIntensityBars() {
+            const intensityGrid = document.getElementById('intensityGrid');
+            if (!intensityGrid) return;
+
+            intensityGrid.innerHTML = SECTOR_INTENSITY_DATA.map(item => {
+                const pct = Math.min(100, Math.round((item.battles / item.max) * 100));
+                const isActive = state.activeSector === item.sector;
+                return `
+                    <button onclick="selectSector('${item.sector.replace("'", "\'")}')"
+                            class="intensity-bar-card ${isActive ? 'active' : ''}">
+                        <div class="intensity-top">
+                            <span>${item.sector}</span>
+                            <span class="intensity-count">${item.battles} боїв</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width:${pct}%;background:${item.color};"></div>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function toggleAnalyticsPanel() {
+            state.analyticsCollapsed = !state.analyticsCollapsed;
+            const body = document.getElementById('analyticsBody');
+            const btn = document.getElementById('toggleAnalyticsBtn');
+            body.classList.toggle('collapsed', state.analyticsCollapsed);
+            btn.textContent = state.analyticsCollapsed ? 'Розгорнути' : 'Згорнути';
+        }
+
+        function renderMapMarkers() {
+            const container = document.getElementById('mapMarkersContainer');
+            if (!container) return;
+
+            const svgNS = 'http://www.w3.org/2000/svg';
+            container.innerHTML = '';
+
+            MAP_LOCATIONS.forEach(loc => {
+                const newsCount = state.news.filter(n => n.locationId === loc.id).length;
+                const isSelected = state.selectedLocationId === loc.id || state.activeSector === loc.sector;
+                const markerColor = loc.intensity === 'high' ? '#ef4444' : (loc.intensity === 'medium' ? '#f59e0b' : '#3b82f6');
+
+                const g = document.createElementNS(svgNS, 'g');
+                g.setAttribute('class', 'map-marker-group');
+                g.setAttribute('transform', `translate(${loc.x}, ${loc.y})`);
+
+                if (loc.intensity === 'high' || isSelected) {
+                    const pulse = document.createElementNS(svgNS, 'circle');
+                    pulse.setAttribute('r', isSelected ? '13' : '10');
+                    pulse.setAttribute('fill', markerColor);
+                    pulse.setAttribute('class', 'marker-pulse-ring');
+                    g.appendChild(pulse);
+                }
+
+                if (isSelected) {
+                    const ring = document.createElementNS(svgNS, 'circle');
+                    ring.setAttribute('r', '11');
+                    ring.setAttribute('fill', 'none');
+                    ring.setAttribute('stroke', '#ffffff');
+                    ring.setAttribute('stroke-width', '2');
+                    g.appendChild(ring);
+                }
+
+                const dot = document.createElementNS(svgNS, 'circle');
+                dot.setAttribute('r', isSelected ? '6.5' : '5.2');
+                dot.setAttribute('fill', markerColor);
+                dot.setAttribute('stroke', '#070b12');
+                dot.setAttribute('stroke-width', '1.8');
+                g.appendChild(dot);
+
+                const labelText = `${loc.name}${newsCount > 0 ? ` (${newsCount})` : ''}`;
+                const labelWidth = labelText.length * 6.2 + 12;
+                const offsetX = loc.x > 690 ? -labelWidth - 9 : 9;
+
+                const rect = document.createElementNS(svgNS, 'rect');
+                rect.setAttribute('x', offsetX);
+                rect.setAttribute('y', '-9');
+                rect.setAttribute('width', labelWidth);
+                rect.setAttribute('height', '18');
+                rect.setAttribute('rx', '5');
+                rect.setAttribute('fill', isSelected ? '#1e3a8a' : 'rgba(7, 11, 18, 0.9)');
+                rect.setAttribute('stroke', isSelected ? '#60a5fa' : 'rgba(51, 65, 85, 0.9)');
+                rect.setAttribute('stroke-width', '1');
+                rect.setAttribute('class', 'marker-label-bg');
+                g.appendChild(rect);
+
+                const text = document.createElementNS(svgNS, 'text');
+                text.setAttribute('x', offsetX + 6);
+                text.setAttribute('y', '3.5');
+                text.setAttribute('fill', isSelected ? '#ffffff' : '#e2e8f0');
+                text.setAttribute('font-size', '10.5');
+                text.setAttribute('font-weight', '700');
+                text.textContent = labelText;
+                g.appendChild(text);
+
+                g.addEventListener('mouseenter', (e) => showMapTooltip(e, loc, newsCount));
+                g.addEventListener('mousemove', (e) => moveMapTooltip(e));
+                g.addEventListener('mouseleave', hideMapTooltip);
+                g.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    focusLocationOnMap(loc.id, true);
+                });
+
+                container.appendChild(g);
+            });
+        }
+
+        function showMapTooltip(event, loc, newsCount) {
+            const tooltip = document.getElementById('mapTooltip');
+            if (!tooltip) return;
+            tooltip.innerHTML = `
+                <div style="font-weight:800;color:#f8fafc;margin-bottom:2px;">${loc.name}</div>
+                <div style="color:#93c5fd;font-size:11px;">Напрямок: ${loc.sector}</div>
+                <div style="color:#fbbf24;font-size:11px;margin-top:3px;font-weight:600;">Зведень у стрічці: ${newsCount}</div>
+            `;
+            tooltip.style.display = 'block';
+            moveMapTooltip(event);
+        }
+
+        function moveMapTooltip(event) {
+            const tooltip = document.getElementById('mapTooltip');
+            const viewport = document.getElementById('mapViewport');
+            if (!tooltip || !viewport) return;
+            const rect = viewport.getBoundingClientRect();
+            tooltip.style.left = Math.min(rect.width - 235, Math.max(10, event.clientX - rect.left + 14)) + 'px';
+            tooltip.style.top = Math.min(rect.height - 95, Math.max(10, event.clientY - rect.top - 10)) + 'px';
+        }
+
+        function hideMapTooltip() {
+            const tooltip = document.getElementById('mapTooltip');
+            if (tooltip) tooltip.style.display = 'none';
+        }
+
+        function initSvgMapInteractions() {
+            const svg = document.getElementById('ukraineSvgMap');
+            if (!svg) return;
+
+            svg.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                zoomMap(e.deltaY < 0 ? 1.15 : 0.87);
+            }, { passive: false });
+
+            svg.addEventListener('mousedown', (e) => {
+                state.isDraggingMap = true;
+                state.dragStart = { x: e.clientX - state.mapTransform.x, y: e.clientY - state.mapTransform.y };
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!state.isDraggingMap) return;
+                state.mapTransform.x = e.clientX - state.dragStart.x;
+                state.mapTransform.y = e.clientY - state.dragStart.y;
+                applyMapTransform();
+            });
+
+            window.addEventListener('mouseup', () => { state.isDraggingMap = false; });
+        }
+
+        function applyMapTransform() {
+            const group = document.getElementById('mapTransformGroup');
+            if (!group) return;
+            const { scale, x, y } = state.mapTransform;
+            group.setAttribute('transform', `translate(${x}, ${y}) scale(${scale})`);
+        }
+
+        function zoomMap(factor) {
+            const nextScale = Math.min(3.2, Math.max(0.75, state.mapTransform.scale * factor));
+            const ratio = nextScale / state.mapTransform.scale;
+            state.mapTransform.x = 450 - (450 - state.mapTransform.x) * ratio;
+            state.mapTransform.y = 310 - (310 - state.mapTransform.y) * ratio;
+            state.mapTransform.scale = nextScale;
+            applyMapTransform();
+        }
+
+        function focusEasternFront() {
+            state.mapTransform = { scale: 1.75, x: 450 - 675 * 1.75, y: 310 - 255 * 1.75 };
+            applyMapTransform();
+            document.getElementById('mapFocusLabel').textContent = 'Східний фронт';
+        }
+
+        function resetMapTransform() {
+            state.selectedLocationId = null;
+            state.mapTransform = { scale: 1, x: 0, y: 0 };
+            applyMapTransform();
+            document.getElementById('mapFocusLabel').textContent = 'Уся Україна';
+            renderMapMarkers();
+            renderNewsFeed();
+        }
+
+        function focusLocationOnMap(locationId, filterBySector = false, newsIdToHighlight = null) {
+            const loc = MAP_LOCATIONS.find(l => l.id === locationId);
+            if (!loc) return;
+
+            state.selectedLocationId = loc.id;
+            if (newsIdToHighlight) state.highlightedNewsId = newsIdToHighlight;
+
+            const targetScale = 1.85;
+            state.mapTransform = { scale: targetScale, x: 450 - loc.x * targetScale, y: 310 - loc.y * targetScale };
+            applyMapTransform();
+            document.getElementById('mapFocusLabel').textContent = `${loc.name} (${loc.sector})`;
+
+            if (filterBySector) {
+                state.activeSector = loc.sector;
+                renderSectorTabs();
+                renderIntensityBars();
+            }
+
+            if (state.layoutMode === 'feed') setLayoutMode('split');
+            renderMapMarkers();
+            renderNewsFeed();
+
+            if (newsIdToHighlight) {
+                setTimeout(() => {
+                    const cardEl = document.getElementById(`news-${newsIdToHighlight}`);
+                    if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 80);
+            }
+        }
+
+        function renderSectorTabs() {
+            const container = document.getElementById('sectorTabsContainer');
+            if (!container) return;
+
+            const sectors = ['Усі', 'Покровський', 'Курахівський', "Куп'янський", 'Курський', 'Торецький', 'Краматорський', 'Запорізький', 'Південний', 'Обрані'];
+
+            container.innerHTML = sectors.map(sec => {
+                const isActive = state.activeSector === sec;
+                const isSaved = sec === 'Обрані';
+                const label = isSaved ? `⭐ Обрані (${state.bookmarkedIds.length})` : sec;
+                return `
+                    <button onclick="selectSector('${sec.replace("'", "\'")}')"
+                            class="sector-tab ${isSaved ? 'saved-tab' : ''} ${isActive ? 'active' : ''}">
+                        ${label}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function selectSector(sector) {
+            state.activeSector = sector;
+            if (sector === 'Усі') state.selectedLocationId = null;
+            document.getElementById('activeSectorLabel').textContent =
+                sector === 'Усі' ? 'Усі напрямки' : (sector === 'Обрані' ? 'Збережені новини' : `${sector} напрямок`);
+
+            renderSectorTabs();
+            renderIntensityBars();
+            renderMapMarkers();
+            renderNewsFeed();
+        }
+
+        function handleSearchInput() {
+            const input = document.getElementById('searchInput');
+            state.searchQuery = (input.value || '').trim().toLowerCase();
+            document.getElementById('clearSearchBtn').style.display = state.searchQuery ? 'block' : 'none';
+            renderNewsFeed();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            state.searchQuery = '';
+            document.getElementById('clearSearchBtn').style.display = 'none';
+            renderNewsFeed();
+        }
+
+        function renderNewsFeed() {
+            const container = document.getElementById('newsListContainer');
+            const countEl = document.getElementById('visibleNewsCount');
+            if (!container) return;
+
+            const filtered = state.news.filter(item => {
+                if (state.activeSector === 'Обрані') {
+                    if (!state.bookmarkedIds.includes(item.id)) return false;
+                } else if (state.activeSector !== 'Усі') {
+                    if (item.sector !== state.activeSector) return false;
+                }
+                if (state.searchQuery) {
+                    const loc = MAP_LOCATIONS.find(l => l.id === item.locationId);
+                    const haystack = `${item.title} ${item.summary} ${item.sector} ${loc ? loc.name : ''}`.toLowerCase();
+                    if (!haystack.includes(state.searchQuery)) return false;
+                }
+                return true;
+            });
+
+            if (countEl) countEl.textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size:24px;margin-bottom:8px;">🔍</div>
+                        <div>За обраними критеріями зведень не знайдено.</div>
+                        <button onclick="resetAllFilters()" class="btn btn-primary" style="margin-top:12px;">Показати всі новини</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => {
+                const loc = MAP_LOCATIONS.find(l => l.id === item.locationId);
+                const isBookmarked = state.bookmarkedIds.includes(item.id);
+                const isHighlighted = state.highlightedNewsId === item.id;
+                return `
+                    <article id="news-${item.id}" class="news-card priority-${item.priority} ${isHighlighted ? 'highlighted' : ''}">
+                        <div class="news-meta-top">
+                            <div class="badges-row">
+                                <span class="badge-sector">${item.sector}</span>
+                                ${loc ? `
+                                    <button onclick="focusLocationOnMap('${loc.id}', false, '${item.id}')" class="badge-city">
+                                        <span>📍</span><span>${loc.name}</span>
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <span class="news-time">${formatNewsTime(item.timestamp)}</span>
+                        </div>
+                        <h2 class="news-title">${escapeHtml(item.title)}</h2>
+                        <p class="news-summary">${escapeHtml(item.summary)}</p>
+                        <div class="news-footer">
+                            <span class="news-source">${escapeHtml(item.source)}</span>
+                            <div class="news-actions">
+                                ${loc ? `<button onclick="focusLocationOnMap('${loc.id}', false, '${item.id}')" class="card-action-btn">🗺️ На мапі</button>` : ''}
+                                <button onclick="toggleBookmark('${item.id}')" class="card-action-btn ${isBookmarked ? 'bookmarked' : ''}">
+                                    ${isBookmarked ? '⭐ Збережено' : '☆ В обране'}
+                                </button>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function resetAllFilters() {
+            state.activeSector = 'Усі';
+            state.selectedLocationId = null;
+            state.highlightedNewsId = null;
+            clearSearch();
+            resetMapTransform();
+            renderSectorTabs();
+            renderIntensityBars();
+            renderNewsFeed();
+        }
+
+        function toggleBookmark(newsId) {
+            const idx = state.bookmarkedIds.indexOf(newsId);
+            if (idx === -1) state.bookmarkedIds.push(newsId);
+            else state.bookmarkedIds.splice(idx, 1);
+            saveBookmarks();
+            renderSectorTabs();
+            renderNewsFeed();
+        }
+
+        function setLayoutMode(mode) {
+            state.layoutMode = mode;
+            document.getElementById('workspaceGrid').className = `workspace-grid mode-${mode}`;
+            document.getElementById('modeSplitBtn').classList.toggle('active', mode === 'split');
+            document.getElementById('modeMapBtn').classList.toggle('active', mode === 'map');
+            document.getElementById('modeFeedBtn').classList.toggle('active', mode === 'feed');
+        }
+
+        function manualRefresh() {
+            const icon = document.getElementById('refreshIcon');
+            if (icon) icon.classList.add('spin');
+            setTimeout(() => {
+                if (icon) icon.classList.remove('spin');
+                document.getElementById('lastUpdateText').textContent = `Оновлено о ${new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'})}`;
+            }, 600);
+        }
+
+        function formatNewsTime(isoString) {
+            try {
+                const date = new Date(isoString);
+                const diffMin = Math.max(1, Math.round((Date.now() - date.getTime()) / 60000));
+                const hhmm = date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+                if (diffMin < 60) return `${hhmm} (${diffMin} хв тому)`;
+                const hours = Math.floor(diffMin / 60);
+                if (hours < 24) return `${hhmm} (${hours} год тому)`;
+                return hhmm;
+            } catch (e) {
+                return 'Сьогодні';
+            }
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>
